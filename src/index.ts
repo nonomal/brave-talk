@@ -80,7 +80,7 @@ const main = async () => {
   if (!joinRoom || joinRoom === "widget") {
     const context: Context = {
       browser,
-      userHasOptedInToAds: isOptedInToAds(),
+      userHasOptedInToAds: true,
       userIsSubscribed: browser.isBrave && (await userIsSubscribed()),
       useBraveRequestAdsEnabledApi,
     };
@@ -334,7 +334,7 @@ const renderHomePage = (options: WelcomeScreenOptions) => {
 
 let JitsiMeetJS: any;
 
-const renderConferencePage = (roomName: string, jwt: string) => {
+const renderConferencePage = async (roomName: string, jwt: string) => {
   reportMethod("renderConferencePage", { roomName, jwt });
 
   findElement("welcome_page").style.display = "none";
@@ -465,10 +465,21 @@ const renderConferencePage = (roomName: string, jwt: string) => {
     window.addEventListener("beforeunload", askOnUnload);
   };
 
-  // onpagehide appears to be a no-op on iOS...
   const askOnPageHide = (e: any) => {
     e.returnValue = !!"Leave Brave Talk?";
   };
+
+  const uid = jwt_decode(jwt)?.context?.["user"]?.["id"];
+  console.log("joining with uid,", uid, "roomName,", roomName);
+
+  const s = await import("./subscriptions");
+  const group = await s.new_group(+uid, roomName);
+  const participantIDMapping = new Map<string, number>();
+
+  var channelReadyResolver: any = undefined;
+  const channelReady = new Promise((resolve) => {
+    channelReadyResolver = resolve;
+  });
 
   reportMethod("JitsiMeetExternalAPI", options);
   JitsiMeetJS = new JitsiMeetExternalAPI(config.webrtc_domain, options);
@@ -511,8 +522,102 @@ const renderConferencePage = (roomName: string, jwt: string) => {
         window.location.protocol + "//" + window.location.host,
         "_self"
       );
+    })
+    .on("dataChannelOpened", (params: any) => {
+      reportAction("dataChannelOpened", params);
+      // NOTE only setup these handlers once we've successfully joined
+      // and the data channel has been opened
+      channelReadyResolver();
+    })
+    .on("endpointTextMessageReceived", async (params: any) => {
+      reportAction("endpointTextMessageReceived", params);
+      await channelReady;
+      if (params.data.eventData.name == "endpoint-text-message") {
+        const response = group.handle(
+          JSON.parse(params.data.eventData.text),
+          participantIDMapping.get(params.data.senderInfo.id)
+        );
+        if (response) {
+          console.log("response to endpoint message", response);
+          if (response.type == "set_key") {
+            // FIXME call set encryption key here
+
+            console.log("setting key!");
+            console.log(response.key);
+          } else if (response.type == "message") {
+            reportAction("sendEndpointTextMessage", response);
+            JitsiMeetJS.executeCommand(
+              "sendEndpointTextMessage",
+              "",
+              JSON.stringify(response)
+            );
+          }
+        }
+      }
+    })
+    .on("participantJoined", async (params: any) => {
+      reportAction("participantJoined", params);
+      await channelReady;
+
+      // NOTE: When we join we will recieve one participantJoined event per existing participant
+      const event = {
+        type: "membership",
+        change: {
+          type: "join",
+        },
+      };
+      // FIXME massive hack :)
+      participantIDMapping.set(params.id, +params.displayName);
+      const response = group.handle(event, participantIDMapping.get(params.id));
+      if (response) {
+        reportAction("sendEndpointTextMessage", response);
+        JitsiMeetJS.executeCommand(
+          "sendEndpointTextMessage",
+          "",
+          JSON.stringify(response)
+        );
+      }
+    })
+    .on("participantLeft", async (params: any) => {
+      reportAction("participantLeft", params);
+      await channelReady;
+
+      const event = {
+        type: "membership",
+        change: {
+          type: "leave",
+        },
+      };
+      const response = group.handle(event, participantIDMapping.get(params.id));
+      if (response) {
+        reportAction("sendEndpointTextMessage", response);
+        JitsiMeetJS.executeCommand(
+          "sendEndpointTextMessage",
+          "",
+          JSON.stringify(response)
+        );
+      }
     });
 
+  /*
+      const participants: Array<any> = JitsiMeetJS.getParticipantsInfo();
+      // Simulate a join from existing participants
+      for (const participant of participants) {
+        const event = {
+          "type": "membership",
+          "change": {
+            "type": "join"
+          }
+        }
+        // FIXME massive hack :)
+        participantIDMapping.set(participant.participantId, participant.displayName);
+        const response = group.handle(event, participantIDMapping.get(participant.participantId));
+        if (response) {
+            reportAction("sendEndpointTextMessage", response);
+            JitsiMeetJS.executeCommand('sendEndpointTextMessage', '', JSON.stringify(response));
+        }
+      }
+      */
   const passcode = extractValueFromFragment("passcode");
   if (passcode) {
     JitsiMeetJS.on("passwordRequired", () => {
@@ -530,7 +635,7 @@ const joinConferenceRoom = async (
   try {
     const result = await fetchJWT(roomName, createP, notice);
     if (!result.url) {
-      renderConferencePage(roomName, result.jwt);
+      await renderConferencePage(roomName, result.jwt);
     } else {
       const passcode = extractValueFromFragment("passcode");
 

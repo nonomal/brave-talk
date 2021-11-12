@@ -16,6 +16,11 @@ const loadRewardsSdk = async (): Promise<Rewards.JSSDK> => {
   return sdk;
 };
 
+export async function new_group(uid: number, meeting_id: string) {
+  await loadRewardsSdk();
+  return Rewards.new_group(uid, meeting_id);
+}
+
 export async function provisionOrder(orderId: string): Promise<void> {
   let currentMethod;
   try {
