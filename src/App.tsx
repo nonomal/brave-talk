@@ -5,12 +5,14 @@ import { InCall } from "./components/InCall";
 import { JoinCall as JoinWeb3Call } from "./components/web3/JoinCall";
 import { WelcomeScreen } from "./components/WelcomeScreen";
 import "./css/poppins.css";
+import "./css/inter.css";
 import { useBrowserProperties } from "./hooks/use-browser-properties";
 import { useCallSetupStatus } from "./hooks/use-call-setup-status";
 import { useParams } from "./hooks/use-params";
 import { reportAction } from "./lib";
 
 import "./i18n/i18next";
+import { useEffect } from "react";
 
 const styles = {
   container: css({
@@ -24,7 +26,7 @@ const styles = {
   }),
 };
 
-export const App: React.FC = () => {
+export const App = () => {
   const params = useParams();
 
   const {
@@ -38,6 +40,8 @@ export const App: React.FC = () => {
     isCallReady,
     isWeb3Call,
     setIsWeb3Call,
+    web3Account,
+    setWeb3Account,
     setJwt,
     setRoomName,
     setJitsiContext,
@@ -50,19 +54,42 @@ export const App: React.FC = () => {
     window.close();
   }
 
+  const initRouteTranscriptId = () => {
+    const match = window.location.pathname.match(
+      /^\/transcript-([a-z0-9]{50})$/,
+    );
+    if (match) {
+      return match[1];
+    }
+  };
+  const [routeTranscriptId, setRouteTranscriptId] = React.useState<
+    string | undefined
+  >(initRouteTranscriptId);
+  const onRouterStatePushed = () => {
+    setRouteTranscriptId(initRouteTranscriptId());
+  };
+  useEffect(() => {
+    const onPopstate = onRouterStatePushed;
+    window.addEventListener("popstate", onPopstate);
+    return () => {
+      window.removeEventListener("popstate", onPopstate);
+    };
+  });
+
   return (
     <React.Fragment>
       <GlobalStyles />
-
       <div css={styles.container}>
-        <InCall
-          roomName={roomName ?? ""}
-          jwt={jwt ?? ""}
-          isMobile={browserProps.isMobile}
-          isCallReady={isCallReady}
-          isWeb3Call={isWeb3Call}
-          jitsiContext={jitsiContext}
-        />
+        {!routeTranscriptId && isCallReady && (
+          <InCall
+            roomName={roomName ?? ""}
+            jwt={jwt ?? ""}
+            isMobile={browserProps.isMobile}
+            isCallReady={isCallReady}
+            isWeb3Call={isWeb3Call}
+            jitsiContext={jitsiContext}
+          />
+        )}
         {!isCallReady &&
           (isWeb3Call && hasInitialRoom ? (
             <JoinWeb3Call
@@ -70,6 +97,8 @@ export const App: React.FC = () => {
               setJwt={setJwt}
               jitsiContext={jitsiContext}
               setJitsiContext={setJitsiContext}
+              web3Account={web3Account}
+              setWeb3Account={setWeb3Account}
             />
           ) : (
             <WelcomeScreen
@@ -80,10 +109,14 @@ export const App: React.FC = () => {
               browser={browserProps}
               isWeb3Call={isWeb3Call}
               setIsWeb3Call={setIsWeb3Call}
+              web3Account={params.isSolana ? web3Account : "ETH"}
+              setWeb3Account={setWeb3Account}
               setJwt={setJwt}
               setRoomName={setRoomName}
               jitsiContext={jitsiContext}
               setJitsiContext={setJitsiContext}
+              onRouterStatePushed={onRouterStatePushed}
+              displayTranscriptId={routeTranscriptId}
             />
           ))}
       </div>

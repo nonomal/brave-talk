@@ -10,13 +10,14 @@ runs:
   using: composite
   steps:
     - name: Use Node.js
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
       with:
         node-version-file: ".node-version"
         cache: npm
     - run: npm ci
       shell: bash
-    - run: npm audit
+    # check includes audit, tsc, lint, prettier
+    - run: npm run check
       shell: bash
     - run: npm test
       shell: bash
@@ -30,8 +31,8 @@ runs:
         # fail the build if any generated javascript contains 'eval' to help mitigate the need for script-src unsafe-eval CSP
         if find html -name "*.js" | xargs grep -El "\beval\("; then echo '"eval" found'; exit 99; else echo '"eval" not found'; fi
     - name: Upload built outputs
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
       with:
         name: build-output
-        path: ./html
+        path: html
         if-no-files-found: error

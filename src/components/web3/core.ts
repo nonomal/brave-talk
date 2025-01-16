@@ -7,20 +7,30 @@ export interface POAP {
     image_url: string;
   };
   tokenId: string;
+  chain: string;
 }
 
 export interface NFTcollection {
   id: string;
   name: string;
   image_url: string;
+  chain: string;
+  spam_score: number;
 }
 
 export interface NFT {
   image_url: string;
   name: string;
+  id: string;
+  chain: string;
   collection?: {
     collection_id: string;
     name: string;
+    image_url: string;
+    spam_score: number;
+  };
+  previews?: {
+    image_small_url: string;
   };
 }
 
@@ -44,6 +54,7 @@ export function rememberAvatarUrl(url: string | undefined | null) {
  * Gets the currently set avatar url, if any
  * @returns {string|null} - The avatar url value or a null value
  */
-export function getAvatarUrl(): string | null {
-  return window.sessionStorage.getItem(AVATAR_URL_SESSION_KEY);
+export function getAvatarUrl(jwt: string): string | null {
+  const sessionAvatar = window.sessionStorage.getItem(AVATAR_URL_SESSION_KEY);
+  return sessionAvatar || jwt_decode(jwt).avatar_url || null;
 }

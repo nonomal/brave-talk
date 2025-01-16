@@ -4,6 +4,7 @@ import { web3NFTs } from "./api";
 import { rememberAvatarUrl, NFT } from "./core";
 import { JitsiContext } from "../../jitsi/types";
 import { Login } from "./Login";
+import { SolLogin } from "./SolLogin";
 import { OptionalSettings } from "./OptionalSettings";
 import { bodyText, header } from "./styles";
 import { useWeb3CallState } from "../../hooks/use-web3-call-state";
@@ -16,14 +17,18 @@ interface Props {
   setJwt: (jwt: string) => void;
   jitsiContext: JitsiContext;
   setJitsiContext: (context: JitsiContext) => void;
+  web3Account: "ETH" | "SOL" | null;
+  setWeb3Account: (web3Account: "ETH" | "SOL") => void;
 }
 
-export const JoinCall: React.FC<Props> = ({
+export const JoinCall = ({
   roomName,
   setJwt,
   jitsiContext,
+  web3Account,
+  setWeb3Account,
   setJitsiContext,
-}) => {
+}: Props) => {
   const { t } = useTranslation();
   const [nfts, setNfts] = useState<NFT[] | undefined>();
   const [feedbackMessage, setFeedbackMessage] = useState<TranslationKeys>();
@@ -43,7 +48,7 @@ export const JoinCall: React.FC<Props> = ({
     setParticipantNFTCollections,
     setModeratorNFTCollections,
     joinCall,
-  } = useWeb3CallState(setFeedbackMessage);
+  } = useWeb3CallState(setFeedbackMessage, web3Account, setWeb3Account);
 
   // this magic says "run this function when the web3address changes"
   useEffect(() => {
@@ -63,7 +68,7 @@ export const JoinCall: React.FC<Props> = ({
     if (!web3Address) return;
 
     try {
-      rememberAvatarUrl(nft);
+      rememberAvatarUrl(nft != null ? nft.image_url : "");
       setFeedbackMessage("join_call");
       const result = await joinCall(roomName);
       if (result) {
@@ -94,12 +99,20 @@ export const JoinCall: React.FC<Props> = ({
       >
         <div css={[header, { marginBottom: "22px" }]}>Join a Web3 Call</div>
 
-        <Login web3address={web3Address} onAddressSelected={setWeb3Address} />
+        {web3Account === "ETH" ? (
+          <Login web3address={web3Address} onAddressSelected={setWeb3Address} />
+        ) : (
+          <SolLogin
+            web3address={web3Address}
+            onAddressSelected={setWeb3Address}
+          />
+        )}
 
         {web3Address && (
           <div css={{ marginTop: "28px" }}>
             <OptionalSettings
               startCall={false}
+              web3Account={web3Account}
               permissionType={permissionType}
               setPermissionType={setPermissionType}
               nfts={nfts}

@@ -50,6 +50,10 @@ module.exports = {
         ],
       },
       {
+        test: /\.(png|jpg)$/,
+        type: "asset/inline",
+      },
+      {
         test: /\.svg$/,
         type: "asset",
         use: "svgo-loader",
@@ -93,7 +97,7 @@ module.exports = {
           new MiniCssExtractPlugin({
             filename: "static/[name].[contenthash].css",
           }),
-        ]
+        ],
   ),
   devServer: {
     client: {
@@ -102,13 +106,14 @@ module.exports = {
     },
     open: ["/"],
     historyApiFallback: true,
-    proxy: {
-      "/api": {
-        target: "https://subscriptions.bsg.brave.software",
+    proxy: [
+      {
+        context: ["/api"],
+        target: "https://brave-talk-server.bsg.brave.software",
         pathRewrite: { "^/api": "" },
         changeOrigin: true,
       },
-    },
+    ],
   },
   optimization: {
     minimizer: [`...`, new CssMinimizerPlugin()],

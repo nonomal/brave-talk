@@ -34,6 +34,7 @@ interface JoinConferenceRoomResult {
   jwt?: string;
   retryLater?: boolean;
   retryAsWeb3?: boolean;
+  web3account?: string;
 }
 
 const fetchOrCreateJWT = async (
@@ -41,7 +42,7 @@ const fetchOrCreateJWT = async (
   createP: boolean,
   waitForSubscriptionBeforeCreating: boolean,
   notice: (message: TranslationKeys) => void,
-  web3?: Web3RequestBody
+  web3?: Web3RequestBody,
 ): Promise<JoinConferenceRoomResult> => {
   reportMethod("joinConferenceRoom", { roomName, createP });
 
@@ -66,6 +67,10 @@ const fetchOrCreateJWT = async (
       return await fetchOrCreateJWT(roomName, true, false, notice);
     } else if (error.message.includes("Retry as Web3 call")) {
       return { retryAsWeb3: true };
+    } else if (error.message.includes("ETH")) {
+      return { web3account: "ETH" };
+    } else if (error.message.includes("SOL")) {
+      return { web3account: "SOL" };
     } else {
       console.error(error);
       notice(error.message);
@@ -85,16 +90,18 @@ interface CallSetup {
   isCallReady: boolean;
   isWeb3Call: boolean;
   setIsWeb3Call: (isWeb3Call: boolean) => void;
+  web3Account: "ETH" | "SOL" | null;
+  setWeb3Account: (web3Account: "ETH" | "SOL" | null) => void;
   setJwt: (jwt: string) => void;
   setRoomName: (roomName: string) => void;
   setJitsiContext: (jitsiContext: JitsiContext) => void;
 }
 
 export function useCallSetupStatus(
-  waitForSubscriptionBeforeCreating: boolean
+  waitForSubscriptionBeforeCreating: boolean,
 ): CallSetup {
   const [roomName, setRoomName] = useState(() =>
-    calculateInitialRoomNameFromUrl(window.location.pathname)
+    calculateInitialRoomNameFromUrl(window.location.pathname),
   );
 
   // why is this important? Because we don't want to show any
@@ -102,12 +109,11 @@ export function useCallSetupStatus(
   // on it
   const [hasInitialRoom, setHasInitialRoom] = useState(() => !!roomName);
   const [isWeb3Call, setIsWeb3Call] = useState(false);
+  const [web3Account, setWeb3Account] = useState<"ETH" | "SOL" | null>(null);
   const [jwt, setJwt] = useState<string>();
   const [notice, setNotice] = useState<TranslationKeys>();
   const [isEstablishingCall, setIsEstablishingCall] = useState(false);
   const [jitsiContext, setJitsiContext] = useState<JitsiContext>({
-    recordingLink: undefined,
-    recordingTTL: undefined,
     firstTime: true,
     // check every 30 seconds (disable by setting to 0)
     inactiveInterval: 30 * 1000,
@@ -127,7 +133,7 @@ export function useCallSetupStatus(
       roomName,
       hasInitialRoom,
       waitForSubscriptionBeforeCreating,
-      isWeb3Call
+      isWeb3Call,
     ) {
       if (roomName) {
         try {
@@ -141,16 +147,19 @@ export function useCallSetupStatus(
             false,
             waitForSubscriptionBeforeCreating,
             setNotice,
-            undefined
+            undefined,
           );
 
           if (result.jwt) {
             setJwt(result.jwt);
           }
 
-          if (result.retryAsWeb3) {
-            // Convert this to a web3 call
+          if (result.web3account === "ETH") {
             setIsWeb3Call(true);
+            setWeb3Account("ETH");
+          } else if (result.web3account === "SOL") {
+            setIsWeb3Call(true);
+            setWeb3Account("SOL");
           } else {
             // the error message has already been displayed by fetchOrCreateJWT,
             // but we need to allow the user to recover by enabling all functionality
@@ -162,8 +171,8 @@ export function useCallSetupStatus(
                   roomName,
                   false,
                   waitForSubscriptionBeforeCreating,
-                  isWeb3Call
-                )
+                  isWeb3Call,
+                ),
               );
             }
           }
@@ -192,6 +201,8 @@ export function useCallSetupStatus(
     isCallReady,
     isWeb3Call,
     setIsWeb3Call,
+    web3Account,
+    setWeb3Account,
     setJwt,
     setRoomName,
     setJitsiContext,

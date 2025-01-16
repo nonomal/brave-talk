@@ -1,56 +1,99 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { POAP, NFTcollection, NFT } from "./core";
+import { isProduction } from "../../environment";
 import { ExapandablePanel } from "./ExpandablePanel";
+import { NonExapandablePanel } from "./NonExpandablePanel";
+import { ExceptionListPanel } from "./ExceptionListPanel";
 import { SelectableImageList } from "./SelectableImageList";
 import { SelectablePoapList } from "./SelectablePoapList";
 import { SelectableNFTCollectionList } from "./SelectableNFTCollectionList";
 import { PermissionTypeSelector } from "./PermissionTypeSelector";
+import { useParams } from "../../hooks/use-params";
+import { Web3PermissionType } from "./api";
 
 interface Props {
   startCall: boolean;
+  web3Address?: string;
+  web3Account: "ETH" | "SOL" | null;
   nfts?: NFT[];
   poaps?: POAP[];
+  exceptionList?: string[];
+  setExceptionList?: (exceptionList: string[]) => void;
+  isExceptionAddressWrong?: boolean;
+  setIsExceptionAddressWrong?: (val: boolean) => void;
+  allowList?: string[];
+  setAllowList?: (exceptionList: string[]) => void;
   nftCollections?: NFTcollection[];
-  nft: string | null;
-  setNft: (nft: string) => void;
+  nft: NFT | null;
+  setNft: (nft: NFT | null) => void;
   permissionType: string;
-  setPermissionType: (permissionType: string) => void;
-  participantPoaps: POAP[];
-  setParticipantPoaps: (participantPoaps: POAP[]) => void;
-  moderatorPoaps: POAP[];
-  setModeratorPoaps: (moderatorPoaps: POAP[]) => void;
+  setPermissionType: (permissionType: Web3PermissionType) => void;
+  participantPoaps?: POAP[];
+  setParticipantPoaps?: (participantPoaps: POAP[]) => void;
+  moderatorPoaps?: POAP[];
+  setModeratorPoaps?: (moderatorPoaps: POAP[]) => void;
   participantNFTCollections: NFTcollection[];
   setParticipantNFTCollections: (
-    participantNFTCollections: NFTcollection[]
+    participantNFTCollections: NFTcollection[],
   ) => void;
   moderatorNFTCollections: NFTcollection[];
   setModeratorNFTCollections: (
-    moderatorNFTCollections: NFTcollection[]
+    moderatorNFTCollections: NFTcollection[],
   ) => void;
 }
 
-export const OptionalSettings: React.FC<Props> = ({
+export const OptionalSettings = ({
   startCall,
+  web3Account,
+  web3Address = "",
   nfts = [],
   poaps,
+  exceptionList = [],
+  setExceptionList = () => {
+    return [];
+  },
+  isExceptionAddressWrong,
+  setIsExceptionAddressWrong = () => {
+    return false;
+  },
+  allowList = [],
+  setAllowList = () => {
+    return [];
+  },
   nftCollections,
   nft,
   setNft,
   permissionType,
   setPermissionType,
-  participantPoaps,
-  setParticipantPoaps,
-  moderatorPoaps,
-  setModeratorPoaps,
+  participantPoaps = [],
+  setParticipantPoaps = () => {
+    return [];
+  },
+  moderatorPoaps = [],
+  setModeratorPoaps = () => {
+    return [];
+  },
   participantNFTCollections,
   setParticipantNFTCollections,
   moderatorNFTCollections,
   setModeratorNFTCollections,
-}) => {
+}: Props) => {
+  const isAllow = useParams().isAllowAddress;
   const nftItems = nfts.map((n: NFT) => ({ ...n, imageUrl: n.image_url }));
-  const selectedNftIdx = nfts.findIndex((n) => n.image_url === nft);
+  const selectedNftIdx = nfts.findIndex((n) => nft != null && n.id === nft.id);
   const { t } = useTranslation();
+  const onToggle = (idx: number) => {
+    const selectedId = nfts[idx].id;
+    if (nft != null && nft.id === selectedId) {
+      setNft(null);
+      if (!isProduction) console.log("debug: NFT deselected");
+    } else {
+      setNft(nfts[idx]);
+      if (!isProduction)
+        console.log(`debug: NFT #${idx} [${nfts[idx].name}] selected.`);
+    }
+  };
 
   return (
     <div css={{ maxWidth: "563px", margin: "0 auto 0" }}>
@@ -66,7 +109,7 @@ export const OptionalSettings: React.FC<Props> = ({
           selectedIdxs={
             typeof selectedNftIdx === "number" ? [selectedNftIdx] : []
           }
-          onToggleSelection={(idx) => setNft(nfts[idx].image_url)}
+          onToggleSelection={onToggle}
         />
       </ExapandablePanel>
 
@@ -81,6 +124,7 @@ export const OptionalSettings: React.FC<Props> = ({
           <PermissionTypeSelector
             permissionType={permissionType}
             setPermissionType={setPermissionType}
+            web3Account={web3Account}
           />
         </>
       )}
@@ -148,6 +192,48 @@ export const OptionalSettings: React.FC<Props> = ({
             </ExapandablePanel>
           </React.Fragment>
         )}
+      {startCall && permissionType === "balance" && (
+        <React.Fragment>
+          <NonExapandablePanel
+            header={t("bat_gating_panel_header")}
+            subhead={t("bat_gating_panel_subheader")}
+          />
+        </React.Fragment>
+      )}
+      {startCall && (
+        <React.Fragment>
+          <ExceptionListPanel
+            header={t("address_exception_header")}
+            subhead={t("address_exception_subheader")}
+            web3Account={web3Account}
+            web3Address={web3Address}
+            exceptionList={exceptionList}
+            compareList={allowList}
+            onChange={(addr) => {
+              setExceptionList(addr);
+            }}
+            isExceptionAddressWrong={isExceptionAddressWrong}
+            setIsExceptionAddressWrong={setIsExceptionAddressWrong}
+          />
+        </React.Fragment>
+      )}
+      {startCall && isAllow && (
+        <React.Fragment>
+          <ExceptionListPanel
+            header={t("address_allow_header")}
+            subhead={t("address_allow_subheader")}
+            web3Account={web3Account}
+            web3Address={web3Address}
+            exceptionList={allowList}
+            compareList={exceptionList}
+            onChange={(addr) => {
+              setAllowList(addr);
+            }}
+            isExceptionAddressWrong={isExceptionAddressWrong}
+            setIsExceptionAddressWrong={setIsExceptionAddressWrong}
+          />
+        </React.Fragment>
+      )}
     </div>
   );
 };

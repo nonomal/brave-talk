@@ -1,29 +1,5 @@
 import { IJitsiMeetApi, JitsiContext, JitsiOptions } from "./types";
-import { upsertRecordingForRoom } from "../recordings-store";
 import { reportAction } from "../lib";
-
-/**
- * Creates a new recording or updates the expiration time for an existing recording
- * @param {JitsiContext} context - Context for the conference room
- * @returns {void}
- */
-export const updateRecTimestamp = (
-  context: JitsiContext,
-  options: JitsiOptions
-) => {
-  (function _updateRecTimestamp() {
-    if (!context.recordingLink) {
-      return;
-    }
-
-    upsertRecordingForRoom(
-      context.recordingLink,
-      options.roomName,
-      context.recordingTTL
-    );
-    setTimeout(_updateRecTimestamp, 5 * 60 * 1000);
-  })();
-};
 
 /**
  * Tracks number of attendees and hangs up the call if none over a given threshold
@@ -44,7 +20,7 @@ export const inactiveTimeout =
       "!!! testing inactivity: participants",
       participantCount,
       "and inactive count",
-      context.inactiveCount
+      context.inactiveCount,
     );
 
     if (context.inactiveCount >= context.inactiveTotal) {
@@ -52,7 +28,7 @@ export const inactiveTimeout =
     } else {
       context.inactiveTimer = setTimeout(
         inactiveTimeout(jitsi, context),
-        context.inactiveInterval
+        context.inactiveInterval,
       );
     }
   };
@@ -69,7 +45,7 @@ export const nowActive = (
   jitsi: IJitsiMeetApi,
   context: JitsiContext,
   event: string,
-  params: any
+  params: any,
 ) => {
   if (!context.inactiveInterval) {
     return;
@@ -79,7 +55,7 @@ export const nowActive = (
   clearTimeout(context.inactiveTimer);
   context.inactiveTimer = setTimeout(
     inactiveTimeout(jitsi, context),
-    context.inactiveInterval
+    context.inactiveInterval,
   );
 };
 
@@ -94,7 +70,7 @@ export const updateSubject = (jitsi: IJitsiMeetApi, options: JitsiOptions) => {
     // works for everyone...
     jitsi.executeCommand(
       "localSubject",
-      options.interfaceConfigOverwrite.APP_NAME
+      options.interfaceConfigOverwrite.APP_NAME,
     );
   } catch (error: any) {
     console.error("!!! failed local subject change", error);

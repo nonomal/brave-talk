@@ -3,8 +3,6 @@ import { Web3Authentication } from "../components/web3/api";
 export type IJitsiMeetApi = any;
 
 export type JitsiContext = {
-  recordingLink: string | undefined;
-  recordingTTL: number | undefined;
   firstTime: boolean;
   inactiveInterval: number;
   inactiveTotal: number;
@@ -20,8 +18,15 @@ export type JitsiEventHandler = {
   fn: (
     JitsiMeetJS: IJitsiMeetApi,
     context: JitsiContext,
-    options: JitsiOptions
+    options: JitsiOptions,
   ) => (params: any) => void;
+};
+
+export type CustomToolbarButton = {
+  backgroundColor?: string;
+  icon: string;
+  id: string;
+  text: string;
 };
 
 export type JitsiOptions = {
@@ -34,12 +39,14 @@ export type JitsiOptions = {
       disabled: boolean;
       rtcstatsEnabled: boolean;
     };
+    buttonsWithNotifyClick: string[];
     brandingRoomAlias: string;
     callStatsID: boolean;
     callStatsSecret: boolean;
     conferenceInfo: {
       autoHide: string[];
     };
+    customToolbarButtons: CustomToolbarButton[];
     disabledSounds: string[];
     disableGTM: boolean;
     doNotStoreRoom: boolean;
@@ -68,13 +75,20 @@ export type JitsiOptions = {
     inviteAppName: string;
     localSubject: string;
     prejoinPageEnabled: boolean;
+    recordings: {
+      recordAudioAndVideo: boolean;
+    };
     resolution?: number;
     startWithAudioMuted: boolean;
     startWithVideoMuted: boolean;
     toolbarConfig: {
       autoHideWhileChatIsOpen: boolean;
     };
+    toolbarButtons: string[];
     transcribingEnabled: boolean;
+    transcription: {
+      autoTranscribeOnRecord: boolean;
+    };
     useHostPageLocalStorage: boolean;
     videoQuality: {
       persist: boolean;
@@ -96,4 +110,51 @@ export type JitsiOptions = {
     TOOLBAR_BUTTONS: string[];
   };
   onload: () => void;
+};
+
+export type JitsiTranscriptionChunk = {
+  language: string;
+  messageID: string;
+  participant?: {
+    avatarUrl?: string;
+    id: string;
+    name: string;
+  };
+  final?: string;
+  stable?: string;
+  unstable?: string;
+  clearTimeOut?: number;
+  delta: number;
+  elapsed: string;
+};
+
+export type JitsiTranscriptionStatusEvent = {
+  on: boolean;
+};
+
+export type JitsiRoomResult = {
+  rooms: JitsiRoom[];
+};
+
+export type JitsiRoom = {
+  isMainRoom: boolean;
+  id: string;
+  jid: string;
+  participants: JitsiParticipant[];
+};
+
+export type JitsiParticipant = {
+  jid: string;
+  role: string;
+  displayName: string;
+  id: string;
+};
+
+export type JitsiDeployment = {
+  environment: string;
+  envType: string;
+  releaseNumber: string;
+  shard: string;
+  region: string;
+  userRegion: string;
 };

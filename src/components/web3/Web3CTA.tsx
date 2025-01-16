@@ -10,7 +10,7 @@ interface Props {
   isSubscribed: boolean;
 }
 
-export const Web3CTA: React.FC<Props> = ({ onClick, isSubscribed }) => {
+export const Web3CTA = ({ onClick, isSubscribed }: Props) => {
   const { t } = useTranslation();
   return (
     <Section
@@ -20,6 +20,7 @@ export const Web3CTA: React.FC<Props> = ({ onClick, isSubscribed }) => {
       }}
     >
       <Text variant="body">
+        <h2>{t("web3_card_title")}</h2>
         <p css={{ margin: "8px auto 18px", maxWidth: "500px" }}>
           {t("host_web3_call_body")}
         </p>
@@ -40,7 +41,7 @@ export const Web3CTA: React.FC<Props> = ({ onClick, isSubscribed }) => {
         )}
         <p>
           <a
-            href="https://brave.com/web3/what-is-web3/"
+            href="https://brave.com/web3-talk-calls"
             css={{ color: "inherit" }}
           >
             {t("web3_cta_fine_print")}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { isProduction } from "../environment";
 
 export type SubscriptionStatus = "unknown" | "yes" | "no";
 
@@ -7,7 +8,7 @@ export function subscriptionCheckWithTimeout(): Promise<boolean> {
   const timeout = new Promise<boolean>((resolve) => {
     timer = setTimeout(() => {
       console.log(
-        "Timeout on checking subscription status, assuming not subscribed"
+        "Timeout on checking subscription status, assuming not subscribed",
       );
       resolve(false);
     }, 10_000);
@@ -28,6 +29,17 @@ async function parseOrderFromQueryParams(): Promise<void> {
   let orderId: string | null | undefined;
 
   if (order) {
+    if (isProduction) {
+      // Strip order from URL
+      params.delete("intent");
+      params.delete("order");
+      const paramString = params.size ? `?${params}` : "";
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${paramString}${window.location.hash}`,
+      );
+    }
     try {
       const o = JSON.parse(atob(order));
       const exp = o?.recovery_expiration;

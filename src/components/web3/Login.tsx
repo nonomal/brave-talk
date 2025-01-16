@@ -8,12 +8,21 @@ interface Props {
   onAddressSelected: (address: string, event: string) => void;
 }
 
-export const Login: React.FC<Props> = ({ web3address, onAddressSelected }) => {
+export const Login = ({ web3address, onAddressSelected }: Props) => {
   const [notice, setNotice] = useState<JSX.Element | undefined>();
   const { t } = useTranslation();
 
   useEffect(() => {
-    window.ethereum?.on("accountsChanged", () => setNotice(undefined));
+    if (window.ethereum) {
+      const handleAccountsChanged = () => setNotice(undefined);
+      window.ethereum.on("accountsChanged", handleAccountsChanged);
+      return () => {
+        window.ethereum.removeListener(
+          "accountsChanged",
+          handleAccountsChanged,
+        );
+      };
+    }
   }, []);
 
   useEffect(() => {
@@ -40,7 +49,7 @@ export const Login: React.FC<Props> = ({ web3address, onAddressSelected }) => {
                   Help with Brave Wallet
                 </a>
               </div>
-            </Trans>
+            </Trans>,
           );
         });
     }

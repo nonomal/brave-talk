@@ -7,6 +7,8 @@ declare let JitsiMeetExternalAPI: any;
 declare function jwt_decode(input: string): any;
 
 interface Window {
+  braveSolana: any;
+  phantom: any;
   ethereum: any;
   chrome?: {
     braveRequestAdsEnabled?: () => Promise<boolean>;
@@ -17,4 +19,9 @@ interface Window {
 declare module "*.svg" {
   const content: any;
   export default content;
+}
+
+declare module "*.png" {
+  const value: any;
+  export default value;
 }

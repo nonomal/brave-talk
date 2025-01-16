@@ -1,10 +1,11 @@
-import React from "react";
 import { css } from "@emotion/react";
 import { useTranslation } from "react-i18next";
+import { Web3PermissionType } from "./api";
 
 type Props = {
+  web3Account: "ETH" | "SOL" | null;
   permissionType: string;
-  setPermissionType: (permissionType: string) => void;
+  setPermissionType: (permissionType: Web3PermissionType) => void;
 };
 
 const styles = {
@@ -30,17 +31,26 @@ const styles = {
     "&:hover": { background: "rgba(255, 255, 255, 0.42)" },
   }),
 };
+const disabledButton = css({
+  pointerEvents: "none",
+  opacity: 0.5,
+});
 
-export const PermissionTypeSelector: React.FC<Props> = ({
+export const PermissionTypeSelector = ({
   setPermissionType,
   permissionType,
-}) => {
+  web3Account,
+}: Props) => {
   const { t } = useTranslation();
   return (
     <div css={{ display: "flex" }}>
       <button
         onClick={() => setPermissionType("POAP")}
-        css={[styles.base, permissionType === "POAP" && styles.selected]}
+        css={[
+          styles.base,
+          permissionType === "POAP" && styles.selected,
+          web3Account === "SOL" && disabledButton,
+        ]}
       >
         {t("poap_permission_type")}
       </button>
@@ -52,6 +62,16 @@ export const PermissionTypeSelector: React.FC<Props> = ({
         ]}
       >
         {t("nft_collection_permission_type")}
+      </button>
+      <button
+        onClick={() => setPermissionType("balance")}
+        css={[
+          styles.base,
+          permissionType === "balance" && styles.selected,
+          web3Account === "SOL" && disabledButton,
+        ]}
+      >
+        {"BAT Gating"}
       </button>
     </div>
   );

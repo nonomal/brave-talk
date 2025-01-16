@@ -20,13 +20,13 @@ const styles = {
     fontSize: "16px",
     lineHeight: "20px",
     color: "#ffffff",
+    textDecoration: "none",
     "@media only screen and (max-width: 600px)": {
       width: "100%",
     },
   }),
   solid: css({
     background: "rgba(255, 255, 255, 0.24)",
-    backdropFilter: "blur(16px)",
     "&:hover": { background: "rgba(255, 255, 255, 0.42)" },
     "&:active": { background: "rgba(255, 255, 255, 0.32)" },
     "&:disabled": { background: "rgba(255, 255, 255, 0.32)" },
@@ -48,13 +48,13 @@ const styles = {
   }),
 };
 
-export const Button: React.FC<Props> = ({
+export const Button = ({
   hollow,
   children,
   onClick,
   disabled,
   className,
-}) => {
+}: Props) => {
   return (
     <button
       css={[styles.base, hollow ? styles.hollow : styles.solid]}
